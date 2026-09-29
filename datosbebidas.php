@@ -4,7 +4,8 @@ header('Access-Control-Allow-Origin: *');
 header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
 header('Content-Type: application/json');
 
-$conexion = new mysqli('localhost', 'root', '', 'app1');
+require_once __DIR__ . '/config.php';
+$conexion = conectar();
 //print $conexion->server_info;
 
 

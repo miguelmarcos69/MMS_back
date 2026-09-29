@@ -5,24 +5,24 @@ header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Ac
 header('Content-Type: application/json');
 
 
-$conexion = new mysqli('localhost', 'root', '', 'app1');
+require_once __DIR__ . '/config.php';
+$conexion = conectar();
 if ($conexion->connect_errno) {
     print "Codigo de error" . $conexion->connect_errno . "<br/>" . "Error de " . $conexion->connect_error;
 } else {
     $json = json_decode(file_get_contents("php://input"));
 
-    $consulta = $conexion->query("select * from usuarios where nombre='" . $json->nombre . "' AND apellidos='" . $json->apellido . "'");
-    $datos = [];
-
-    while ($d = $consulta->fetch_array(MYSQLI_ASSOC)) {
-        array_push($datos, $d);
-    }
+    $datos = consulta($conexion, "select * from usuarios where nombre=? AND apellidos=?", [$json->nombre, $json->apellido]);
 
 
     if (!$datos) {
         if ($json->nombre !== NULL) {
             # code...
-            $sentencia = $conexion->query("INSERT INTO usuarios(nombre,apellidos,contra,fechaNac,poblacion,img,email,rol) VALUES('" . $json->nombre . "','" . $json->apellido . "','" . $json->contra2 . "','" . $json->fechaNac . "','" . $json->poblacion . "','/uploads/usuarios/default.png','" . $json->email . "','" . $json->rol . "')");
+            $sentencia = consulta(
+                $conexion,
+                "INSERT INTO usuarios(nombre,apellidos,contra,fechaNac,poblacion,img,email,rol) VALUES(?,?,?,?,?,'/uploads/usuarios/default.png',?,?)",
+                [$json->nombre, $json->apellido, $json->contra2, $json->fechaNac, $json->poblacion, $json->email, $json->rol]
+            );
             $msg = 'Usuario creado';
         }
     } else {

@@ -4,7 +4,8 @@ header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Ac
 header('Content-Type: application/json');
 
 
-$conexion = new mysqli('localhost', 'root', '', 'app1');
+require_once __DIR__ . '/config.php';
+$conexion = conectar();
 if ($conexion->connect_errno) {
     print "Codigo de error" . $conexion->connect_errno . "<br/>" . "Error de " . $conexion->connect_error;
 } else {
@@ -26,33 +27,34 @@ if ($conexion->connect_errno) {
             $cadenaPlatos .= $json[0]->platos[$i]->id . "|";
         }
     }
-    $select = $conexion->query("select * from mesas where id='" . $json[0]->id . "'");
-    $consultaArray = [];
-    while ($d3 = $select->fetch_array(MYSQLI_ASSOC)) {
-        array_push($consultaArray, $d3);
-    }
+    $platos = substr($cadenaPlatos, 0, -1);
+    $bebida = substr($cadenaBebida, 0, -1);
+
+    $consultaArray = consulta($conexion, "select * from mesas where id=?", [$json[0]->id]);
 
 
-    if ($json[0]->accion == 'llevar') {
+    if ($json[0]->accion == 'llevar' || $json[0]->accion == 'domi') {
         if (count($consultaArray) == 1) {
-            $sentencia = $conexion->query("UPDATE mesas  SET platos ='" . substr($cadenaPlatos, 0, -1) . "', bebida ='" . substr($cadenaBebida, 0, -1) . "', precioTotal= " . $json[0]->precioTotal . " where id=" .  intval($json[0]->id, 10));
+            $sentencia = consulta(
+                $conexion,
+                "UPDATE mesas SET platos=?, bebida=?, precioTotal=? where id=?",
+                [$platos, $bebida, $json[0]->precioTotal, intval($json[0]->id, 10)]
+            );
         } else {
-            $sentencia = $conexion->query("INSERT INTO mesas (numTel, platos, bebida,accion,precioTotal,idusu)
-        VALUES ('" . $json[0]->numTel . "', '" .  substr($cadenaPlatos, 0, -1) . "','" .  substr($cadenaBebida, 0, -1) . "','llevar','" . $json[0]->precioTotal . "','" . $json[0]->idusu . "') ");
+            $sentencia = consulta(
+                $conexion,
+                "INSERT INTO mesas (numTel, platos, bebida, accion, precioTotal, idusu) VALUES (?,?,?,?,?,?)",
+                [$json[0]->numTel, $platos, $bebida, $json[0]->accion, $json[0]->precioTotal, $json[0]->idusu]
+            );
         }
     }
 
-    if ($json[0]->accion == 'domi') {
-        if (count($consultaArray) == 1) {
-            $sentencia = $conexion->query("UPDATE mesas  SET platos ='" . substr($cadenaPlatos, 0, -1) . "', bebida ='" . substr($cadenaBebida, 0, -1) . "', precioTotal= " . $json[0]->precioTotal . " where id=" .  intval($json[0]->id, 10));
-        } else {
-
-            $sentencia = $conexion->query("INSERT INTO mesas (numTel, platos, bebida,accion,precioTotal,idusu)
-            VALUES ('" . $json[0]->numTel . "','" .  substr($cadenaPlatos, 0, -1) . "','" .  substr($cadenaBebida, 0, -1) . "', 'domi','" . $json[0]->precioTotal . "','" . $json[0]->idusu . "') ");
-        }
-    }
     if (is_numeric($json[1])) {
-        $sentencia = $conexion->query("UPDATE mesas  SET platos ='" . substr($cadenaPlatos, 0, -1) . "', bebida ='" . substr($cadenaBebida, 0, -1) . "', ocupantes= " .  intval($json[1], 10) . " , precioTotal= '" .  $json[0]->precioTotal . "' where id=" .  intval($json[0]->id, 10));
+        $sentencia = consulta(
+            $conexion,
+            "UPDATE mesas SET platos=?, bebida=?, ocupantes=?, precioTotal=? where id=?",
+            [$platos, $bebida, intval($json[1], 10), $json[0]->precioTotal, intval($json[0]->id, 10)]
+        );
     }
     $datos = (object) array('valido' => $sentencia);
     echo json_encode($datos, JSON_FORCE_OBJECT);

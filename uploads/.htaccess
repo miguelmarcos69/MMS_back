@@ -1,1 +1,6 @@
 Header set Access-Control-Allow-Origin *
+
+# En esta carpeta solo hay imágenes: nunca se ejecuta ni se sirve código PHP
+<FilesMatch "\.(php\d?|phtml|phar)$">
+    Require all denied
+</FilesMatch>

@@ -4,7 +4,8 @@ header('Access-Control-Allow-Origin: *');
 header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
 header('Content-Type: application/json');
 
-$conexion = new mysqli('145.14.156.129', 'u915966951_miguel', 'W*|mpxL|6s', 'u915966951_app');
+require_once __DIR__ . '/config.php';
+$conexion = conectar();
 //print $conexion->server_info;
 
 
@@ -88,10 +89,10 @@ if ($conexion->connect_errno) {
         //se añade el cliente
         if ($datosMesas[$i]["accion"] == 'domi' || $datosMesas[$i]["accion"] == 'llevar') {
 
-            $consulta3 = $conexion->query("select * from clientes where telefono='" . $datosMesas[$i]["numTel"] . "'");
+            $consulta3 = consulta($conexion, "select * from clientes where telefono=?", [$datosMesas[$i]["numTel"]]);
 
 
-            while ($d3 = $consulta3->fetch_array(MYSQLI_ASSOC)) {
+            foreach ($consulta3 as $d3) {
                 $datosMesas[$i]["nombre"] = $d3['nombre'];
                 $datosMesas[$i]["apellidos"] = $d3["apellidos"];
                 $datosMesas[$i]["direccion"] = $d3["direccion"];

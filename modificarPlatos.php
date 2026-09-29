@@ -5,7 +5,8 @@ header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Ac
 header('Content-Type: application/json');
 
 
-$conexion = new mysqli('localhost', 'root', '', 'app1');
+require_once __DIR__ . '/config.php';
+$conexion = conectar();
 if ($conexion->connect_errno) {
     print "Codigo de error" . $conexion->connect_errno . "<br/>" . "Error de " . $conexion->connect_error;
 } else {
@@ -19,7 +20,11 @@ if ($conexion->connect_errno) {
         for ($i = 0; $i < count($json->ingredientes); $i++) {
             $cadenaIngredientes .= $json->ingredientes[$i] . "|";
         }
-        $sentenicia = $conexion->query("UPDATE platos  SET nombrePlato ='$json->nombre',ingredientes='" .  substr($cadenaIngredientes, 0, -1) . "', precio='" . $json->precio . "' where id='" . $json->id . " '");
+        $sentenicia = consulta(
+            $conexion,
+            "UPDATE platos SET nombrePlato=?, ingredientes=?, precio=? where id=?",
+            [$json->nombre, substr($cadenaIngredientes, 0, -1), $json->precio, $json->id]
+        );
 
         $datos = (object) array(
             'valido' => $sentenicia,
@@ -30,7 +35,7 @@ if ($conexion->connect_errno) {
 
     if ($json->tipo === 'bebida') {
 
-        $sentenicia = $conexion->query("UPDATE bebidas  SET nombre ='$json->nombre', precio='" . $json->precio . "' where id='" . $json->id . " '");
+        $sentenicia = consulta($conexion, "UPDATE bebidas SET nombre=?, precio=? where id=?", [$json->nombre, $json->precio, $json->id]);
 
 
         $datos = (object) array(

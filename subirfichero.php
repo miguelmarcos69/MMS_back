@@ -3,7 +3,8 @@ header('Access-Control-Allow-Origin: *');
 header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
 header('Content-Type: application/json');
 
-$conexion = new mysqli('localhost', 'root', '', 'app1');
+require_once __DIR__ . '/config.php';
+$conexion = conectar();
 
 if ($conexion->connect_errno) {
     print "Codigo de error" . $conexion->connect_errno . "<br/>" . "Error de " . $conexion->connect_error;
@@ -12,69 +13,39 @@ if ($conexion->connect_errno) {
 
     $params = json_decode($json); // DECODIFICA EL JSON Y LO GUARADA EN LA VARIABLE
 
-    $nombre = $params->nombre;
-    $nombreArchivo = $params->nombreArchivo;
-    $archivo = $params->base64textString;
-    $archivo = base64_decode($archivo);
-    $ext = explode('.', $params->nombreArchivo);
-    $extension = $ext[1];
+    $response = new stdClass();
+    $response->resultado = false;
 
+    // El "nombre" es el id del plato, bebida o usuario: solo se aceptan números
+    $nombre = intval($params->nombre ?? 0);
+    $archivo = base64_decode($params->base64textString ?? '', true);
+    $extension = strtolower(pathinfo($params->nombreArchivo ?? '', PATHINFO_EXTENSION));
 
+    // Carpeta y tabla según el tipo de imagen
+    $destinos = [
+        'platos' => ['carpeta' => 'platos', 'tabla' => 'platos'],
+        'bebida' => ['carpeta' => 'bebidas', 'tabla' => 'bebidas'],
+        'usuar' => ['carpeta' => 'usuarios', 'tabla' => 'usuarios'],
+    ];
+    $destino = $destinos[$params->tipo ?? ''] ?? null;
 
+    if ($nombre <= 0 || $destino === null) {
+        $response->mensaje = 'Datos no válidos';
+    } elseif (!in_array($extension, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
+        $response->mensaje = 'Solo se permiten imágenes (jpg, png, gif, webp)';
+    } elseif ($archivo === false || @getimagesizefromstring($archivo) === false) {
+        $response->mensaje = 'El fichero no es una imagen válida';
+    } else {
+        $ruta = '/uploads/' . $destino['carpeta'] . '/' . $nombre . '.' . $extension;
 
+        // La tabla sale de la lista fija de arriba, nunca de la petición
+        consulta($conexion, "UPDATE " . $destino['tabla'] . " SET img=? where id=?", [$ruta, $nombre]);
+        file_put_contents(__DIR__ . $ruta, $archivo);
 
-
-
-
-    if ($params->tipo == 'platos') {
-        $sentencia2 = $conexion->query("select * from platos where id='" . $params->nombre . "'");
-
-        if ($sentencia2) {
-            $datos2 = [];
-            while ($d2 = $sentencia2->fetch_array(MYSQLI_ASSOC)) {
-                array_push($datos2, $d2);
-            }
-
-            $sentencia3 = $conexion->query("UPDATE platos  SET img ='/uploads/platos/" . $datos2[0]['id'] . "." . $extension . "' where id='" . $datos2[0]['id'] . " '");
-            $filePath = $_SERVER['DOCUMENT_ROOT'] . "/proyectodaw/uploads/platos/" . $nombre . "." . $extension;
-        }
-    }
-    if ($params->tipo == 'bebida') {
-        $sentencia2 = $conexion->query("select * from bebidas where id='" . $params->nombre . "'");
-
-
-        if ($sentencia2) {
-            $datos2 = [];
-            while ($d2 = $sentencia2->fetch_array(MYSQLI_ASSOC)) {
-                array_push($datos2, $d2);
-            }
-
-            $sentencia3 = $conexion->query("UPDATE platos  SET img ='/uploads/bebidas/" . $datos2[0]['id'] . "." . $extension . "' where id='" . $datos2[0]['id'] . " '");
-            $filePath = $_SERVER['DOCUMENT_ROOT'] . "/proyectodaw/uploads/bebidas/" . $nombre . "." . $extension;
-        }
-    }
-    if ($params->tipo == 'usuar') {
-
-
-        $sentencia3 = $conexion->query("UPDATE usuarios  SET img ='/uploads/usuarios/" . $nombre . "." . $extension . "' where id='" . $nombre . " '");
-
-
-        $filePath = $_SERVER['DOCUMENT_ROOT'] . "/proyectodaw/uploads/usuarios/" . $nombre . "." . $extension;
+        $response->resultado = true;
+        $response->mensaje = 'SE SUBIO EXITOSAMENTE';
+        $response->ext = $extension;
     }
 
-    file_put_contents($filePath, $archivo);
-
-
-    class Result
-    {
-    }
-    // GENERA LOS DATOS DE RESPUESTA
-    $response = new Result();
-
-    $response->resultado = true;
-    $response->mensaje = 'SE SUBIO EXITOSAMENTE';
-    $response->ext = $extension;
-
-    header('Content-Type: application/json');
     echo json_encode($response); // MUESTRA EL JSON GENERADO */
 }

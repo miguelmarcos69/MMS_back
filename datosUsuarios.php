@@ -4,7 +4,8 @@ header('Access-Control-Allow-Origin: *');
 header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
 
 
-$conexion = new mysqli('localhost', 'root', '', 'app1');
+require_once __DIR__ . '/config.php';
+$conexion = conectar();
 //print $conexion->server_info;
 
 
@@ -16,13 +17,8 @@ if ($conexion->connect_errno) {
 } else {
     $json = json_decode(file_get_contents("php://input"));
 
-    $consulta = $conexion->query("select * from usuarios ");
-    $datos = [];
-
-    while ($d = $consulta->fetch_array(MYSQLI_ASSOC)) {
-        
-        array_push($datos, $d);
-    }
+    // Todas las columnas menos la contraseña
+    $datos = consulta($conexion, "select id, nombre, apellidos, fechaNac, poblacion, img, obs, email, rol from usuarios");
 
 
     //echo json_encode($platos);

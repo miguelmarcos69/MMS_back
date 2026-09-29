@@ -4,7 +4,8 @@ header('Access-Control-Allow-Origin: *');
 header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept");
 header('Content-Type: application/json');
 
-$conexion = new mysqli('localhost', 'root', '', 'app1');
+require_once __DIR__ . '/config.php';
+$conexion = conectar();
 //print $conexion->server_info;
 
 
@@ -15,7 +16,7 @@ if ($conexion->connect_errno) {
     print "Codigo de error" . $conexion->connect_errno . "<br/>" . "Error de " . $conexion->connect_error;
 } else {
 
-    $consulta = $conexion->query("select * from archivoMesa");
+    $consulta = $conexion->query("select * from archivomesa");
     $datosMesas = [];
     while ($d = $consulta->fetch_array(MYSQLI_ASSOC)) {
         array_push($datosMesas, $d);
@@ -88,10 +89,10 @@ if ($conexion->connect_errno) {
         //se añade el cliente
         if ($datosMesas[$i]["accion"] == 'domi' || $datosMesas[$i]["accion"] == 'llevar') {
 
-            $consulta3 = $conexion->query("select * from clientes where telefono='" . $datosMesas[$i]["numTel"] . "'");
+            $consulta3 = consulta($conexion, "select * from clientes where telefono=?", [$datosMesas[$i]["numTel"]]);
 
 
-            while ($d3 = $consulta3->fetch_array(MYSQLI_ASSOC)) {
+            foreach ($consulta3 as $d3) {
                 $datosMesas[$i]["nombre"] = $d3['nombre'];
                 $datosMesas[$i]["apellidos"] = $d3["apellidos"];
                 $datosMesas[$i]["direccion"] = $d3["direccion"];
@@ -100,16 +101,16 @@ if ($conexion->connect_errno) {
             }
         }
         if ($datosMesas[$i]["usuPagado"] != '') {
-            $consulta4 = $conexion->query("select * from usuarios where id='" . $datosMesas[$i]["usuPagado"] . "'");
+            $consulta4 = consulta($conexion, "select id, nombre, apellidos, fechaNac, poblacion, img, obs, email, rol from usuarios where id=?", [$datosMesas[$i]["usuPagado"]]);
 
-            while ($d4 = $consulta4->fetch_array(MYSQLI_ASSOC)) {
+            foreach ($consulta4 as $d4) {
                 $datosMesas[$i]["usuPagado"] = $d4;
             }
         }
         if ($datosMesas[$i]["idUsu"] != '') {
-            $consulta4 = $conexion->query("select * from usuarios where id='" . $datosMesas[$i]["idUsu"] . "'");
+            $consulta4 = consulta($conexion, "select id, nombre, apellidos, fechaNac, poblacion, img, obs, email, rol from usuarios where id=?", [$datosMesas[$i]["idUsu"]]);
 
-            while ($d4 = $consulta4->fetch_array(MYSQLI_ASSOC)) {
+            foreach ($consulta4 as $d4) {
                 $datosMesas[$i]["idUsu"] = $d4;
             }
         }

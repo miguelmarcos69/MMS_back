@@ -1,0 +1,5 @@
+# Credenciales del servidor: solo existen en el hosting, nunca en el repositorio
+config.prod.php
+
+# Volcados de la base de datos (contienen datos de usuarios)
+*.sql

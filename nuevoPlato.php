@@ -5,7 +5,8 @@ header("Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Ac
 header('Content-Type: application/json');
 
 
-$conexion = new mysqli('localhost', 'root', '', 'app1');
+require_once __DIR__ . '/config.php';
+$conexion = conectar();
 if ($conexion->connect_errno) {
     print "Codigo de error" . $conexion->connect_errno . "<br/>" . "Error de " . $conexion->connect_error;
 } else {
@@ -20,24 +21,18 @@ if ($conexion->connect_errno) {
             $cadenaIngredientes .= $json->ingredientes[$i] . "|";
         }
 
-        $arrayDatos = [];
-        $sentencia2 = $conexion->query("select * from platos where nombrePlato='" . $json->nombre . "'");
+        $arrayDatos = consulta($conexion, "select * from platos where nombrePlato=?", [$json->nombre]);
 
-        while ($d2 = $sentencia2->fetch_array(MYSQLI_ASSOC)) {
-            array_push($arrayDatos, $d2);
-        }
         if (count($arrayDatos) === 0) {
-            $sentencia = $conexion->query("INSERT INTO platos (nombrePlato,ingredientes,precio) 
-            VALUES ('" . $json->nombre . "','" . substr($cadenaIngredientes, 0, -1) . "','" . floatval($json->precio) . "') ");
+            $sentencia = consulta(
+                $conexion,
+                "INSERT INTO platos (nombrePlato,ingredientes,precio) VALUES (?,?,?)",
+                [$json->nombre, substr($cadenaIngredientes, 0, -1), floatval($json->precio)]
+            );
 
-            $datos2 = [];
-            $sentencia2 = $conexion->query("select * from platos where nombrePlato='" . $json->nombre . "'");
+            $datos2 = consulta($conexion, "select * from platos where nombrePlato=?", [$json->nombre]);
 
-            while ($d2 = $sentencia2->fetch_array(MYSQLI_ASSOC)) {
-                array_push($datos2, $d2);
-            }
-
-            $sentencia3 = $conexion->query("UPDATE platos  SET img ='/uploads/platos/" . $datos2[0]['id'] . ".jpg' where id='" . $datos2[0]['id'] . " '");
+            $sentencia3 = consulta($conexion, "UPDATE platos SET img=? where id=?", ['/uploads/platos/' . $datos2[0]['id'] . '.jpg', $datos2[0]['id']]);
             $datos = (object) array(
                 'valido' => $sentencia3,
                 'id' =>  $datos2[0]['id']
@@ -55,27 +50,16 @@ if ($conexion->connect_errno) {
 
     if ($json->tipo === 'bebida') {
 
-        $arrayDatos = [];
-        $sentencia2 = $conexion->query("select * from bebidas where nombre='" . $json->nombre . "'");
+        $arrayDatos = consulta($conexion, "select * from bebidas where nombre=?", [$json->nombre]);
 
-        while ($d2 = $sentencia2->fetch_array(MYSQLI_ASSOC)) {
-            array_push($arrayDatos, $d2);
-        }
         if (count($arrayDatos) === 0) {
 
-            $sentencia = $conexion->query("INSERT INTO bebidas (nombre,precio) 
-            VALUES ('" . $json->nombre . "','" . floatval($json->precio) . "') ");
+            $sentencia = consulta($conexion, "INSERT INTO bebidas (nombre,precio) VALUES (?,?)", [$json->nombre, floatval($json->precio)]);
 
-            $datos2 = [];
-            $sentencia2 = $conexion->query("select * from bebidas where nombre='" . $json->nombre . "'");
+            $filas = consulta($conexion, "select * from bebidas where nombre=?", [$json->nombre]);
+            $datos2 = end($filas);
 
-
-
-            while ($d2 = $sentencia2->fetch_array(MYSQLI_ASSOC)) {
-                $datos2 = $d2;
-            }
-
-            $sentencia3 = $conexion->query("UPDATE bebidas  SET img ='/uploads/bebidas/" . $datos2['id'] . ".jpg' where id='" . $datos2['id'] . " '");
+            $sentencia3 = consulta($conexion, "UPDATE bebidas SET img=? where id=?", ['/uploads/bebidas/' . $datos2['id'] . '.jpg', $datos2['id']]);
 
             $datos = (object) array(
                 'valido' => $sentencia3,

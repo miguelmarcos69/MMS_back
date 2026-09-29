@@ -10,7 +10,8 @@ require_once "vendor/autoload.php";
 
 use Firebase\JWT\JWT;
 
-$conexion = new mysqli('localhost', 'root', '', 'app1');
+require_once __DIR__ . '/config.php';
+$conexion = conectar();
 //print $conexion->server_info;
 
 
@@ -26,16 +27,10 @@ if ($conexion->connect_errno) {
     if ($json->username != "" || $json->password) {
         # code...
 
-        $consulta = $conexion->query("select * from usuarios where nombre='" . $json->username . "' and contra='" . $json->password . "'");
         $datos = [];
-        $da = [];
+        $da = consulta($conexion, "select * from usuarios where nombre=? and contra=?", [$json->username, $json->password]);
 
-        while ($d = $consulta->fetch_array(MYSQLI_ASSOC)) {
-
-            array_push($da, $d);
-        }
-
-        if (count($da) == 1) {
+        if ($da && count($da) == 1) {
             //generar el key del usuario
             //$token = bin2hex(random_bytes((30 - (30 % 2)) / 2));
             $jwt = jwt($da[0]["id"], $da[0]["nombre"]);
